@@ -411,5 +411,33 @@ Index: test2
     it('should handle OOM case', function() {
       parsePatch('Index: \n===================================================================\n--- \n+++ \n@@ -1,1 +1,2 @@\n-1\n\\ No newline at end of file\n+1\n+2\n');
     });
+
+    it('should handle filenames with carriage return without infinite loop (CVE-2026-24001)', function() {
+      // Note: \r causes line split, so this creates a malformed patch, but shouldn't hang
+      const patch = '--- file\rname.txt\n+++ file\rname.txt\n@@ -1 +1 @@\n-old\n+new\n';
+      const result = parsePatch(patch);
+      // The important thing is this completes without hanging
+      expect(result).to.be.an('array');
+    });
+
+    it('should handle filenames with line separator without infinite loop (CVE-2026-24001)', function() {
+      // \u2028 doesn't split lines but remains in filename - the fix prevents infinite loop
+      const patch = '--- file\u2028name.txt\n+++ file\u2028name.txt\n@@ -1 +1 @@\n-old\n+new\n';
+      const result = parsePatch(patch);
+      // The important thing is this completes without hanging
+      expect(result).to.have.lengthOf(1);
+      expect(result[0].oldFileName).to.include('file');
+      expect(result[0].oldFileName).to.include('name.txt');
+    });
+
+    it('should handle filenames with paragraph separator without infinite loop (CVE-2026-24001)', function() {
+      // \u2029 doesn't split lines but remains in filename - the fix prevents infinite loop
+      const patch = '--- file\u2029name.txt\n+++ file\u2029name.txt\n@@ -1 +1 @@\n-old\n+new\n';
+      const result = parsePatch(patch);
+      // The important thing is this completes without hanging
+      expect(result).to.have.lengthOf(1);
+      expect(result[0].oldFileName).to.include('file');
+      expect(result[0].oldFileName).to.include('name.txt');
+    });
   });
 });
